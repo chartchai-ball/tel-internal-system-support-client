@@ -1,0 +1,357 @@
+import React, { Component } from 'react';
+import axios from 'axios';
+import Highlighter from 'react-highlight-words';
+import {
+  Table,
+  DatePicker,
+  Input,
+  Button,
+  Dropdown,
+  Icon,
+  Menu,
+  Tag,
+} from 'antd';
+import { updateStatus } from '../../../function/UserFunctions';
+
+const { Column } = Table;
+const Search = Input.Search;
+const { RangePicker } = DatePicker;
+var moment = require('moment');
+
+const pStyle = {
+  fontSize: 20,
+  color: 'rgba(0,0,0,0.85)',
+  lineHeight: '24px',
+  display: 'block',
+  marginBottom: 4,
+};
+
+const DescriptionItem = ({ title, content }) => (
+  <div
+    style={{
+      fontSize: 14,
+      lineHeight: '25px',
+      marginBottom: 3,
+      color: 'rgba(0,0,0,0.65)',
+    }}
+  >
+    <p
+      style={{
+        marginRight: 8,
+        display: 'inline-block',
+        color: 'rgba(0,0,0,0.85)',
+      }}
+    >
+      {title}:
+    </p>
+    {content}
+  </div>
+);
+
+export default class Listticcket extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      ticket: [],
+      visible: false,
+      dataTicket: [],
+      image: [],
+      filteredInfo: null,
+      sortedInfo: null,
+      searchText: '',
+      render : '0'  
+    };
+  }
+
+  //search
+getColumnSearchProps = (dataIndex) => ({
+    filterDropdown: ({
+      setSelectedKeys, selectedKeys, confirm, clearFilters,
+    }) => (
+      <div style={{ padding: 8 }}>
+        <Input
+          ref={node => { this.searchInput = node; }}
+          placeholder={`Search ${dataIndex}`}
+          value={selectedKeys[0]}
+          onChange={e => setSelectedKeys(e.target.value ? [e.target.value] : [])}
+          onPressEnter={() => this.handleSearch(selectedKeys, confirm)}
+          style={{ width: 188, marginBottom: 8, display: 'block' }}
+        />
+        <Button
+          type="primary"
+          onClick={() => this.handleSearch(selectedKeys, confirm)}
+          icon="search"
+          size="small"
+          style={{ width: 90, marginRight: 8 }}
+        >
+          Search
+        </Button>
+        <Button
+          onClick={() => this.handleReset(clearFilters)}
+          size="small"
+          style={{ width: 90 }}
+        >
+          Reset
+        </Button>
+      </div>
+    ),
+    filterIcon: filtered => <Icon type="search" style={{ color: filtered ? '#1890ff' : undefined }} />,
+    onFilter: (value, record) => record[dataIndex].toString().toLowerCase().includes(value.toLowerCase()),
+    onFilterDropdownVisibleChange: (visible) => {
+      if (visible) {
+        setTimeout(() => this.searchInput.select());
+      }
+    },
+    render: (text) => (
+      <Highlighter
+        highlightStyle={{ backgroundColor: '#ffc069', padding: 0 }}
+        searchWords={[this.state.searchText]}
+        autoEscape
+        textToHighlight={text.toString()}
+      />
+    ),
+  })
+
+  handleSearch = (selectedKeys, confirm) => {
+    confirm();
+    this.setState({ searchText: selectedKeys[0] });
+  }
+
+  handleReset = (clearFilters) => {
+    clearFilters();
+    this.setState({ searchText: '' });
+  }
+
+
+  //
+
+  handleChange = (pagination, filters, sorter) => {
+    this.setState({
+      filteredInfo: filters,
+      sortedInfo: sorter,
+    });
+  };
+
+  clearFilters = () => {
+    this.setState({ filteredInfo: null });
+  };
+
+  clearAll = () => {
+    this.setState({
+      filteredInfo: null,
+      sortedInfo: null,
+    });
+  };
+
+  nextPage = async record => {
+    const jwtToken = localStorage.getItem('token');
+    const imgs = await axios.get(
+      `http://localhost:8080/v1/ticket/view/${record.ticketId}`,
+      {
+        headers: { Authorization: `${jwtToken}` },
+      }
+    );
+
+    this.setState({ image: imgs.data.data.data });
+
+    this.setState({ dataTicket: record });
+
+    this.props.history.push({
+      pathname: `/user/ticketdetail`,
+      state: { datas: this.state.dataTicket },
+    });
+  };
+
+  async componentDidMount() {
+    const jwtToken = localStorage.getItem('token');
+    const resp = await axios.get('http://localhost:8080/v1/ticket/list', {
+      headers: { Authorization: `${jwtToken}` },
+    });
+
+    const mapDate = resp.data.data.data.map(val => ({
+      ...val,
+      createdAt: moment(val.createdAt).format('LLLL'),
+    }));
+    const sortdata = mapDate.sort((val, key) => val.ticketId - key.ticketId);
+    this.setState({ ticket: sortdata }); 
+    }
+
+
+    componentDidUpdate(prevProps, prevState){
+       console.log('::::::::',prevState.render)
+  }
+  
+
+  handleMenuClick = (e, record) => {
+          
+    if (e.key === '1') {
+      
+      this.state.ticket.status = 'inprogress';
+      
+    }
+    if (e.key === '2') {
+      this.state.ticket.status = 'done';
+    }
+    const statuss = {
+      status: this.state.ticket.status,
+      id: record.ticketId,
+      
+    };
+
+    updateStatus(statuss).then(res => {
+    this.setState({render:'1'})
+    });
+  };
+ 
+  _renderMenu = record => {
+    return (
+      <Menu onClick={key => this.handleMenuClick(key, record)}>
+        <Menu.Item key="1">
+          <a>inprogress</a>
+        </Menu.Item>
+        <Menu.Item key="2">
+          <a>done</a>
+        </Menu.Item>
+      </Menu>
+    );
+  };
+
+  viewMenu = record => {
+    return <Menu onClick={key => this.handleMenuClick(key, record)} />;
+  };
+
+  render() {
+    const arrayData = this.state.image;
+    const testqqq = Object.values(arrayData);
+    const arrayTicket = this.state.ticket;
+    const arrTicket = Object.values(arrayTicket);
+    let { sortedInfo, filteredInfo } = this.state;
+    sortedInfo = sortedInfo || {};
+    filteredInfo = filteredInfo || {};
+
+    const columns = [
+      {
+        title: 'TicketID',
+        dataIndex: 'ticketId',
+        key: 'ticketId',
+             ...this.getColumnSearchProps('ticketId'),
+      },
+      {
+        title: 'Company',
+        dataIndex: 'company',
+        key: 'company',
+             ...this.getColumnSearchProps('company'),
+      },
+      {
+        title: 'Subject',
+        dataIndex: 'subject',
+        key: 'subject',
+             ...this.getColumnSearchProps('subject'),
+      },
+
+      {
+        title: 'Priority',
+        dataIndex: 'priority',
+        key: 'priority',
+        render: priority => (
+          <span>
+            {[priority].map(tag => {
+              let color = priority.length > 5 ? '#108ee9' : '#87d068';
+              if (priority === 'high') {
+                color = '#f50';
+              }
+              return (
+                <Tag color={color} key={priority}>
+                  {priority}
+                </Tag>
+              );
+            })}
+          </span>
+        ),
+        filters: [
+          { text: 'high', value: 'high' },
+          { text: 'normal', value: 'normal' },
+          { text: 'low', value: 'low' },
+        ],
+        filteredValue: filteredInfo.priority || null,
+        onFilter: (value, record) => record.priority.includes(value),
+        sorter: (a, b) => a.priority.length - b.priority.length,
+        sortOrder: sortedInfo.columnKey === 'priority' && sortedInfo.order,
+      },
+      {
+        title: 'Date',
+        dataIndex: 'createdAt',
+        key: 'createdAt',
+             ...this.getColumnSearchProps('createdAt'),
+      },
+      {
+        title: 'Status',
+        dataIndex: 'status',
+        key: 'status',
+        render: status => (
+          <span>
+            {[status].map(tag => {
+              let color = status.length > 8 ? '#108ee9' : '#f50';
+              if (status === 'done') {
+                color = '#87d068';
+              }
+              return (
+                <Tag color={color} key={status}>
+                  {status}
+                </Tag>
+              );
+            })}
+          </span>
+        ),
+        filters: [
+          { text: 'pending', value: 'pending' },
+          { text: 'inprogress', value: 'inprogress' },
+          { text: 'done', value: 'done' },
+        ],
+        filteredValue: filteredInfo.status || null,
+        onFilter: (value, record) => record.status.includes(value),
+        sorter: (a, b) => a.status.length - b.status.length,
+        sortOrder: sortedInfo.columnKey === 'status' && sortedInfo.order,
+      },
+      {
+        title: 'action',
+        render: (text, record) => (
+          <span>
+            <Dropdown overlay={this._renderMenu(record)}>
+              <a className="ant-dropdown-link">
+                Change Status
+                <Icon type="down" />
+              </a>
+            </Dropdown>
+          </span>
+        ),
+      },
+      {
+        title: 'View',
+        render: (text, record) => (
+          <span>
+            <a
+              className="ant-dropdown-link"
+              overlay={this.viewMenu(record)}
+              onClick={this.nextPage.bind(null, record)}
+            >
+              View
+            </a>
+          </span>
+        ),
+      },
+    ];
+
+    return (
+      <div className="table-operations">
+        <h1>Ticket System</h1>
+
+        <Table
+          columns={columns}
+          dataSource={arrTicket}
+          onChange={this.handleChange}
+        />
+      </div>
+    );
+  }
+}

@@ -1,0 +1,17 @@
+
+src
+  component
+    Navebar
+    Header
+    Sidebar
+    Footer
+    Form
+  containers
+    User
+      components
+      List
+      Create
+      Edit
+  utils
+    user
+    parcel

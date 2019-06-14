@@ -1,0 +1,43 @@
+.content .description {
+  display: table;
+}
+.description .term {
+  display: table-cell;
+  margin-right: 8px;
+  padding-bottom: 8px;
+  white-space: nowrap;
+  line-height: 20px;
+}
+.description .term:after {
+  position: relative;
+  top: -0.5px;
+  margin: 0 8px 0 2px;
+  content: ':';
+}
+.description .detail {
+  display: table-cell;
+  padding-bottom: 8px;
+  width: 100%;
+  line-height: 20px;
+}
+
+.wrap {
+  display: flex;
+}
+.content {
+  flex: 1;
+}
+.extraContent {
+  min-width: 240px;
+  text-align: right;
+}
+.content.padding {
+  padding-left: 40px;
+}
+.classpadding {
+  padding-top: 50px;
+}
+.classcard {
+  width: '100%';
+  margin: auto;
+}

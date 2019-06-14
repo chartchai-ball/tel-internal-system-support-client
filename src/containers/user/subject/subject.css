@@ -1,0 +1,11 @@
+.classdiv {
+  display: 'flex';
+  padding-top: 30px;
+}
+.classcard {
+  width: 800px;
+  margin: auto;
+}
+.formstyle {
+  text-align: center;
+}
